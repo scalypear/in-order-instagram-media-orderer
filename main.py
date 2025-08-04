@@ -1,21 +1,19 @@
 import argparse
+from bs4 import BeautifulSoup
+from bs4 import Tag
 import os
 
-html_folder = "your_instagram_activity"
 
-content_to_html_mapping = {
-    "profile": "profile_photos.html",
-    "recently_deleted": "recently_deleted_content.html",
-    "reels": "reels.html",
-    "stories": "stories.html",
-}
-parser = argparse.ArgumentParser(description="Orders media downloaded from instagram.")
+parser = argparse.ArgumentParser(
+    description="Chronologically orders media downloaded from instagram."
+)
 
 parser.add_argument(
     "-f",
     "--igfolder",
     metavar="igfolder",
     required=True,
+    type=str,
     help=r"The path of the folder that Instagram gives you. For example: 'C:\Users\[...]\instagram-ig_username-yyyy-mm-dd-xxxxxxxx' or '/users/[...]/instagram-ig_username-yyyy-mm-dd-xxxxxxxx'",
 )
 
@@ -38,27 +36,49 @@ parser.add_argument(
     required=False,
     default=False,
 )
-# print(parser.parse_args())
 
 
 def main():
 
-    main_folder = parser.parse_args().igfolder  # master folder
+    master_path = parser.parse_args().igfolder
 
-    # targent_content has the content type ("profile", "recently_deleted", "reels", "stories") as the key and a list of the full file paths as the values
-    target_content = {content: [] for content in parser.parse_args().content}
+    html_folder_path = os.path.join(master_path, "your_instagram_activity", "media")
 
-    print()
+    content_to_html_mapping = {
+        "profile": "profile_photos.html",
+        "recently_deleted": "recently_deleted_content.html",
+        "reels": "reels.html",
+        "stories": "stories.html",
+    }
 
-    for content in target_content.keys():
-        path = os.path.join(main_folder, "media", content)
-        for subdir in os.listdir(path):
-            full_dir_path = os.path.join(path, subdir)
-            for file in os.listdir(full_dir_path):
-                full_file_path = os.path.join(full_dir_path, file)
-                target_content[content].append(full_file_path)
+    target_content = parser.parse_args().content
 
-    print(target_content)
+    media_dict = {target: set() for target in target_content}
 
+    for target in target_content:
+        filename = content_to_html_mapping.get(target)
+        file_path = os.path.join(html_folder_path, filename)
+
+
+        with open(
+            file_path,
+            "r",
+            encoding="utf-8",
+        ) as f:
+            html = BeautifulSoup(f, "html.parser").find("main")
+            media = html.find_all(attrs={"src": True})
+            for m in media: 
+                # print(m)
+                media_dict.get(target).add(m.get("src"))
+
+    print(media_dict)
+    # print(dir(Tag))
+    # #         imgs = html.find_all("img")
+    #         for img in imgs:
+    #             src = img.get("src")
+
+    #             media_dict.get(target).append(os.path.join(master_path, src))
+
+    # print(media_dict)
 
 main()
