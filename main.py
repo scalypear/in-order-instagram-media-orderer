@@ -1,13 +1,10 @@
 import argparse
 from bs4 import BeautifulSoup
-from bs4 import Tag
 import os
-
 
 parser = argparse.ArgumentParser(
     description="Chronologically orders media downloaded from instagram."
 )
-
 parser.add_argument(
     "-f",
     "--igfolder",
@@ -16,7 +13,6 @@ parser.add_argument(
     type=str,
     help=r"The path of the folder that Instagram gives you. For example: 'C:\Users\[...]\instagram-ig_username-yyyy-mm-dd-xxxxxxxx' or '/users/[...]/instagram-ig_username-yyyy-mm-dd-xxxxxxxx'",
 )
-
 parser.add_argument(
     "-c",
     "--content",
@@ -39,26 +35,21 @@ parser.add_argument(
 
 
 def main():
-
-    master_path = parser.parse_args().igfolder
-
-    html_folder_path = os.path.join(master_path, "your_instagram_activity", "media")
-
+    source_path = os.path.normpath(parser.parse_args().igfolder)
+    html_folder_path = os.path.join(source_path, "your_instagram_activity", "media")
     content_to_html_mapping = {
         "profile": "profile_photos.html",
         "recently_deleted": "recently_deleted_content.html",
         "reels": "reels.html",
         "stories": "stories.html",
     }
-
     target_content = parser.parse_args().content
-
-    media_dict = {target: set() for target in target_content}
-
+    media_dict = {
+        target: {"files": [], "count": None, "zeros": None} for target in target_content
+    }
     for target in target_content:
         filename = content_to_html_mapping.get(target)
         file_path = os.path.join(html_folder_path, filename)
-
 
         with open(
             file_path,
@@ -67,18 +58,32 @@ def main():
         ) as f:
             html = BeautifulSoup(f, "html.parser").find("main")
             media = html.find_all(attrs={"src": True})
-            for m in media: 
-                # print(m)
-                media_dict.get(target).add(m.get("src"))
 
-    print(media_dict)
-    # print(dir(Tag))
-    # #         imgs = html.find_all("img")
-    #         for img in imgs:
-    #             src = img.get("src")
+            for m in media:
+                media_dict[target]["files"].append(os.path.normpath(m["src"]))
 
-    #             media_dict.get(target).append(os.path.join(master_path, src))
+    for media in media_dict:
+        media_dict[media]["files"] = list(dict.fromkeys(media_dict[media]["files"]))
+        media_dict[media]["count"] = len(media_dict[media]["files"])
+        media_dict[media]["zeros"] = len(str(media_dict[media]["count"]))
 
-    # print(media_dict)
+    for media in media_dict:
+        count = media_dict[media]["count"]
+        zeros = media_dict[media]["zeros"] + 1
+
+        if parser.parse_args().copylocation:
+            # TODO: copy
+            return 0
+
+        # do rename
+        for file in media_dict[media]["files"]:
+            rename_target = os.path.join(source_path, file)
+            new_filepath = (
+                os.path.join(os.path.dirname(rename_target), str(count).zfill(zeros))
+                + os.path.splitext(rename_target)[1]
+            )
+            os.rename(rename_target, new_filepath)
+            count -= 1
+
 
 main()
