@@ -1,6 +1,7 @@
 import argparse
 from bs4 import BeautifulSoup
 import os
+import shutil
 
 parser = argparse.ArgumentParser(
     description="Chronologically orders media downloaded from instagram."
@@ -67,23 +68,52 @@ def main():
         media_dict[media]["count"] = len(media_dict[media]["files"])
         media_dict[media]["zeros"] = len(str(media_dict[media]["count"]))
 
-    for media in media_dict:
-        count = media_dict[media]["count"]
-        zeros = media_dict[media]["zeros"] + 1
+    if copy_location := parser.parse_args().copylocation:
+        # copy rename
+        if not os.path.exists(copy_location):
+            print(copy_location, "doesnt exist, creating new folder.")
+            os.mkdir(copy_location)
+        for media in media_dict:
+            count = media_dict[media]["count"]
+            zeros = media_dict[media]["zeros"] + 1
 
-        if parser.parse_args().copylocation:
-            # TODO: copy
-            return 0
+            subfolder = os.path.join(copy_location, media)
+            os.mkdir(subfolder)
+            print(subfolder)
 
-        # do rename
-        for file in media_dict[media]["files"]:
-            rename_target = os.path.join(source_path, file)
-            new_filepath = (
-                os.path.join(os.path.dirname(rename_target), str(count).zfill(zeros))
-                + os.path.splitext(rename_target)[1]
-            )
-            os.rename(rename_target, new_filepath)
-            count -= 1
 
+            for file in media_dict[media]["files"]:
+                rename_target = os.path.join(source_path, file)
+
+                ext = os.path.splitext(rename_target)[1]
+                if not os.path.exists(rename_target):
+                    print('cant find', rename_target)
+                    return
+                if not os.path.exists(subfolder):
+                    os.mkdir(subfolder)
+                new_filepath = (
+                    os.path.join(subfolder, str(count).zfill(zeros)) + ext
+                )
+                print(new_filepath)
+
+                shutil.copy2(rename_target, new_filepath)
+                count -= 1
+    else:
+        # rename in-place
+        for media in media_dict:
+            count = media_dict[media]["count"]
+            zeros = media_dict[media]["zeros"] + 1
+
+            # do rename
+            for file in media_dict[media]["files"]:
+                rename_target = os.path.join(source_path, file)
+                new_filepath = (
+                    os.path.join(
+                        os.path.dirname(rename_target), str(count).zfill(zeros)
+                    )
+                    + os.path.splitext(rename_target)[1]
+                )
+                os.rename(rename_target, new_filepath)
+                count -= 1
 
 main()
