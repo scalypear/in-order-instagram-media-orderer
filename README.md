@@ -7,7 +7,7 @@ You can download all of your stories, reels, and profile pictures by requesting 
 1. Unzip the file Instagram gives you (make sure to extract it to a contained folder)
 2. Open up your command line/ terminal and navigate to the folder where you've saved `inorder.py`
 3. Type `py inorder.py` and then the following command-line arguments:
-
+  
     `-f` specifies the path of the folder that Instagram gives you. For example: 'C:\Users\\[...]\instagram-ig_username-yyyy-mm-dd-xxxxxxxx' for Windows OS or '/users/[...]/instagram-ig_username-yyyy-mm-dd-xxxxxxxx' for MacOS.
     
     `-c` specifies what media you want to order. Must be one or more of the following: "profile", "recently_deleted", "reels", or "stories"
